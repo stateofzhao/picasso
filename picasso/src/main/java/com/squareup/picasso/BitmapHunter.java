@@ -19,6 +19,8 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
 import android.net.NetworkInfo;
+import android.os.Build;
+import android.view.Gravity;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
@@ -28,14 +30,13 @@ import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static android.media.ExifInterface.ORIENTATION_FLIP_HORIZONTAL;
+import static android.media.ExifInterface.ORIENTATION_FLIP_VERTICAL;
 import static android.media.ExifInterface.ORIENTATION_ROTATE_180;
 import static android.media.ExifInterface.ORIENTATION_ROTATE_270;
 import static android.media.ExifInterface.ORIENTATION_ROTATE_90;
-import static android.media.ExifInterface.ORIENTATION_FLIP_HORIZONTAL;
-import static android.media.ExifInterface.ORIENTATION_FLIP_VERTICAL;
 import static android.media.ExifInterface.ORIENTATION_TRANSPOSE;
 import static android.media.ExifInterface.ORIENTATION_TRANSVERSE;
-
 import static com.squareup.picasso.MemoryPolicy.shouldReadFromMemoryCache;
 import static com.squareup.picasso.Picasso.LoadedFrom.MEMORY;
 import static com.squareup.picasso.Picasso.Priority;
@@ -121,14 +122,14 @@ class BitmapHunter implements Runnable {
   static Bitmap decodeStream(InputStream stream, Request request) throws IOException {
     MarkableInputStream markStream = new MarkableInputStream(stream);
     stream = markStream;
-
-    long mark = markStream.savePosition(65536); // TODO fix this crap.
+    markStream.allowMarksToExpire(false);
+    long mark = markStream.savePosition(1024);
 
     final BitmapFactory.Options options = RequestHandler.createBitmapOptions(request);
     final boolean calculateSize = RequestHandler.requiresInSampleSize(options);
 
     boolean isWebPFile = Utils.isWebPFile(stream);
-    boolean isPurgeable = request.purgeable && android.os.Build.VERSION.SDK_INT < 21;
+    boolean isPurgeable = request.purgeable && Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP;
     markStream.reset(mark);
     // We decode from a byte array because, a) when decoding a WebP network stream, BitmapFactory
     // throws a JNI Exception, so we workaround by decoding a byte array, or b) user requested
@@ -146,9 +147,9 @@ class BitmapHunter implements Runnable {
         BitmapFactory.decodeStream(stream, null, options);
         RequestHandler.calculateInSampleSize(request.targetWidth, request.targetHeight, options,
             request);
-
         markStream.reset(mark);
       }
+      markStream.allowMarksToExpire(true);
       Bitmap bitmap = BitmapFactory.decodeStream(stream, null, options);
       if (bitmap == null) {
         // Treat null as an IO exception, we will eventually retry.
@@ -579,13 +580,25 @@ class BitmapHunter implements Runnable {
         float scaleX, scaleY;
         if (widthRatio > heightRatio) {
           int newSize = (int) Math.ceil(inHeight * (heightRatio / widthRatio));
-          drawY = (inHeight - newSize) / 2;
+          if ((data.centerCropGravity & Gravity.TOP) == Gravity.TOP) {
+            drawY = 0;
+          } else if ((data.centerCropGravity & Gravity.BOTTOM) == Gravity.BOTTOM) {
+            drawY = inHeight - newSize;
+          } else {
+            drawY = (inHeight - newSize) / 2;
+          }
           drawHeight = newSize;
           scaleX = widthRatio;
           scaleY = targetHeight / (float) drawHeight;
         } else if (widthRatio < heightRatio) {
           int newSize = (int) Math.ceil(inWidth * (widthRatio / heightRatio));
-          drawX = (inWidth - newSize) / 2;
+          if ((data.centerCropGravity & Gravity.LEFT) == Gravity.LEFT) {
+            drawX = 0;
+          } else if ((data.centerCropGravity & Gravity.RIGHT) == Gravity.RIGHT) {
+            drawX = inWidth - newSize;
+          } else {
+            drawX = (inWidth - newSize) / 2;
+          }
           drawWidth = newSize;
           scaleX = targetWidth / (float) drawWidth;
           scaleY = heightRatio;
@@ -634,7 +647,8 @@ class BitmapHunter implements Runnable {
 
   private static boolean shouldResize(boolean onlyScaleDown, int inWidth, int inHeight,
       int targetWidth, int targetHeight) {
-    return !onlyScaleDown || inWidth > targetWidth || inHeight > targetHeight;
+    return !onlyScaleDown || (targetWidth != 0 && inWidth > targetWidth)
+            || (targetHeight != 0 && inHeight > targetHeight);
   }
 
   static int getExifRotation(int orientation) {

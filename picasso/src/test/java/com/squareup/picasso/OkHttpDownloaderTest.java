@@ -18,33 +18,33 @@ package com.squareup.picasso;
 import android.net.Uri;
 import com.squareup.okhttp.Cache;
 import com.squareup.okhttp.OkHttpClient;
-import com.squareup.okhttp.mockwebserver.MockResponse;
-import com.squareup.okhttp.mockwebserver.RecordedRequest;
-import com.squareup.okhttp.mockwebserver.rule.MockWebServerRule;
+import okhttp3.mockwebserver.MockResponse;
+import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.RecordedRequest;
 import okio.Okio;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
-import org.robolectric.RobolectricTestRunner;
+import org.robolectric.RobolectricGradleTestRunner;
 import org.robolectric.annotation.Config;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 import static org.junit.Assert.fail;
 
-@RunWith(RobolectricTestRunner.class)
-@Config(manifest = Config.NONE)
+@RunWith(RobolectricGradleTestRunner.class)
+@Config(shadows = { Shadows.ShadowNetwork.class })
 public class OkHttpDownloaderTest {
   @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
-  @Rule public MockWebServerRule server = new MockWebServerRule();
+  @Rule public MockWebServer server = new MockWebServer();
 
   private OkHttpDownloader downloader;
   private Uri uri;
 
   @Before public void setUp() throws Exception {
     downloader = new OkHttpDownloader(temporaryFolder.getRoot());
-    uri = Uri.parse(server.getUrl("/").toString());
+    uri = Uri.parse(server.url("/").toString());
   }
 
   @Test public void cachedResponse() throws Exception {
@@ -119,11 +119,18 @@ public class OkHttpDownloaderTest {
     }
   }
 
-  @Test public void shutdownClosesCache() throws Exception {
+  @Test public void shutdownClosesCacheIfNotShared() throws Exception {
+    OkHttpDownloader downloader = new OkHttpDownloader(temporaryFolder.getRoot());
+    Cache cache = downloader.getClient().getCache();
+    downloader.shutdown();
+    assertThat(cache.isClosed()).isTrue();
+  }
+
+  @Test public void shutdownDoesNotCloseCacheIfShared() throws Exception {
     OkHttpClient client = new OkHttpClient();
     Cache cache = new Cache(temporaryFolder.getRoot(), 100);
     client.setCache(cache);
     new OkHttpDownloader(client).shutdown();
-    assertThat(cache.isClosed()).isTrue();
+    assertThat(cache.isClosed()).isFalse();
   }
 }
