@@ -689,7 +689,7 @@ public class RequestCreator {
       throw new IllegalArgumentException("Target must not be null.");
     }
 
-    if (!data.hasImage()) {
+    if (!data.hasImage()) {//如果没有加载图片需要的数据，取消所有针对此target的请求，并且直接给target设置上占位图（如果有）
       picasso.cancelRequest(target);
       if (setPlaceholder) {
         setPlaceholder(target, getPlaceholderDrawable());
@@ -697,18 +697,18 @@ public class RequestCreator {
       return;
     }
 
-    if (deferred) {
+    if (deferred) {//如果是延迟加载（就是没有设置图片的尺寸）
       if (data.hasSize()) {
         throw new IllegalStateException("Fit cannot be used with resize.");
       }
       int width = target.getWidth();
       int height = target.getHeight();
-      if (width == 0 || height == 0 || target.isLayoutRequested()) {
+      if (width == 0 || height == 0 || target.isLayoutRequested()) {//只有此target还没有稳定的布局到屏幕上
         if (setPlaceholder) {
           setPlaceholder(target, getPlaceholderDrawable());
         }
         picasso.defer(target, new DeferredRequestCreator(this, target, callback));
-        return;
+        return;//这里立即返回，当确定了尺寸后会重新调用此方法，但是会给出尺寸，这样就会走后面的步骤来加载图片了
       }
       data.resize(width, height);
     }

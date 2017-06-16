@@ -16,8 +16,15 @@
 package com.squareup.picasso;
 
 import android.graphics.Bitmap;
+import android.net.Uri;
+import java.net.HttpURLConnection;
 
 /**
+ * 在Picasso中，这个接口仅仅用来处理内存缓存，并不处理磁盘缓存！！
+ * 磁盘缓存这一块直接让各个{@link RequestHandler#load(Request, int)}来自己处理的，例如网络请（{@link
+ * NetworkRequestHandler#load(Request, int)}）使用了{@link Downloader}接口的{@link Downloader#load(Uri,
+ * int)}方法来自己实现的，现在git上开源的各个网络工具库都自带磁盘缓存处理的，即使Android原生提供的{@link HttpURLConnection}也是自带磁盘缓存的（需要在报头协议中控制）！！<P>
+ *
  * A memory cache for storing the most recently used images.
  * <p>
  * <em>Note:</em> The {@link Cache} is accessed by multiple threads. You must ensure

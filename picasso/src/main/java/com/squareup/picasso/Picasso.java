@@ -157,7 +157,7 @@ public class Picasso {
   final Cache cache;
   final Stats stats;
   final Map<Object, Action> targetToAction;
-  final Map<ImageView, DeferredRequestCreator> targetToDeferredRequestCreator;
+  final Map<ImageView, DeferredRequestCreator> targetToDeferredRequestCreator;//存放需要延迟加载（需要在确定了ImageView的尺寸后才进行加载）图片的ImageView
   final ReferenceQueue<Object> referenceQueue;
   final Bitmap.Config defaultBitmapConfig;
 

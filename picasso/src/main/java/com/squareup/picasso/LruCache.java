@@ -27,7 +27,7 @@ import static com.squareup.picasso.Utils.KEY_SEPARATOR;
 
 /** A memory cache which uses a least-recently used eviction policy. */
 public class LruCache implements Cache {
-  final LinkedHashMap<String, Bitmap> map;
+  final LinkedHashMap<String, Bitmap> map;//LinkedHashMap速度跟HashMap是一样的，只是其额外维护了一个双向链表，来实现LRU功能
   private final int maxSize;
 
   private int size;
@@ -74,7 +74,7 @@ public class LruCache implements Cache {
     }
 
     int addedSize = Utils.getBitmapBytes(bitmap);
-    if (addedSize > maxSize) {
+    if (addedSize > maxSize) {//图片占用的内存大于了整个Cache能够使用的内存大小，则直接返回，不进行内存缓存
       return;
     }
 
@@ -82,7 +82,7 @@ public class LruCache implements Cache {
       putCount++;
       size += addedSize;
       Bitmap previous = map.put(key, bitmap);
-      if (previous != null) {
+      if (previous != null) {//证明是更新key值对应的图片
         size -= Utils.getBitmapBytes(previous);
       }
     }
@@ -90,6 +90,7 @@ public class LruCache implements Cache {
     trimToSize(maxSize);
   }
 
+  /** 如果超过最大限制，进行删除最少访问的缓存来腾出空间 */
   private void trimToSize(int maxSize) {
     while (true) {
       String key;
@@ -133,7 +134,7 @@ public class LruCache implements Cache {
 
   @Override public final synchronized void clearKeyUri(String uri) {
     int uriLength = uri.length();
-    for (Iterator<Map.Entry<String, Bitmap>> i = map.entrySet().iterator(); i.hasNext();) {
+    for (Iterator<Map.Entry<String, Bitmap>> i = map.entrySet().iterator(); i.hasNext(); ) {
       Map.Entry<String, Bitmap> entry = i.next();
       String key = entry.getKey();
       Bitmap value = entry.getValue();

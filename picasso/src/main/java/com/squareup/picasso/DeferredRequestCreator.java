@@ -26,6 +26,7 @@ import java.lang.ref.WeakReference;
 import static android.os.Build.VERSION.SDK_INT;
 import static android.os.Build.VERSION_CODES.HONEYCOMB_MR1;
 
+//此处使用装饰者模式（灵活运用，要好好学习），对原RequestCreator进行包装，来添加新的特性
 class DeferredRequestCreator implements ViewTreeObserver.OnPreDrawListener {
 
   final RequestCreator creator;
@@ -73,6 +74,7 @@ class DeferredRequestCreator implements ViewTreeObserver.OnPreDrawListener {
     vto.removeOnPreDrawListener(this);
     this.target.clear();
 
+    //确定了尺寸后开始真正请求图片
     this.creator.unfit().resize(width, height).into(target, callback);
     return true;
   }

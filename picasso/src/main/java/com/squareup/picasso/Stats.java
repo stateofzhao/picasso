@@ -23,6 +23,7 @@ import android.os.Message;
 
 import static android.os.Process.THREAD_PRIORITY_BACKGROUND;
 
+/** 工具的“快照”，用来统计当前工具库的运行情况（例如，已经加载了多少张图片，已经加载的图片占存储空间的总大小等） */
 class Stats {
   private static final int CACHE_HIT = 0;
   private static final int CACHE_MISS = 1;

@@ -199,7 +199,7 @@ class Dispatcher {
     }
 
     hunter = forRequest(action.getPicasso(), this, cache, stats, action);
-    hunter.future = service.submit(hunter);
+    hunter.future = service.submit(hunter);//这里不错，需要记住
     hunterMap.put(action.getKey(), hunter);
     if (dismissFailed) {
       failedActions.remove(action.getTarget());

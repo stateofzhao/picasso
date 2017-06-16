@@ -91,6 +91,7 @@ class BitmapHunter implements Runnable {
   List<Action> actions;
   Bitmap result;
   Future<?> future;
+      //这里很巧妙，直接持有了本Runnable对应的Future，这样直接可以在run()方法中判断是否被取消了，不需要在Future中来处理done()方法了，不过一个额外开销是每次使用此属性时，都需要判断是否为空
   Picasso.LoadedFrom loadedFrom;
   Exception exception;
   int exifOrientation; // Determined during decoding of original resource.
@@ -530,7 +531,7 @@ class BitmapHunter implements Runnable {
           double maxY = Math.max(y4T, Math.max(y3T, Math.max(y1T, y2T)));
           double minY = Math.min(y4T, Math.min(y3T, Math.min(y1T, y2T)));
           targetWidth = (int) Math.floor(maxX - minX);
-          targetHeight  = (int) Math.floor(maxY - minY);
+          targetHeight = (int) Math.floor(maxY - minY);
         } else {
           matrix.setRotate(targetRotation);
           // Recalculate dimensions after rotation (around origin)
@@ -548,7 +549,7 @@ class BitmapHunter implements Runnable {
           double maxY = Math.max(y4T, Math.max(y3T, Math.max(y1T, y2T)));
           double minY = Math.min(y4T, Math.min(y3T, Math.min(y1T, y2T)));
           targetWidth = (int) Math.floor(maxX - minX);
-          targetHeight  = (int) Math.floor(maxY - minY);
+          targetHeight = (int) Math.floor(maxY - minY);
         }
       }
 
@@ -560,10 +561,10 @@ class BitmapHunter implements Runnable {
         if (exifRotation != 0) {
           matrix.preRotate(exifRotation);
           if (exifRotation == 90 || exifRotation == 270) {
-             // Recalculate dimensions after exif rotation
-             int tmpHeight = targetHeight;
-             targetHeight = targetWidth;
-             targetWidth = tmpHeight;
+            // Recalculate dimensions after exif rotation
+            int tmpHeight = targetHeight;
+            targetHeight = targetWidth;
+            targetWidth = tmpHeight;
           }
         }
         if (exifTranslation != 1) {
@@ -647,8 +648,8 @@ class BitmapHunter implements Runnable {
 
   private static boolean shouldResize(boolean onlyScaleDown, int inWidth, int inHeight,
       int targetWidth, int targetHeight) {
-    return !onlyScaleDown || (targetWidth != 0 && inWidth > targetWidth)
-            || (targetHeight != 0 && inHeight > targetHeight);
+    return !onlyScaleDown || (targetWidth != 0 && inWidth > targetWidth) || (targetHeight != 0
+        && inHeight > targetHeight);
   }
 
   static int getExifRotation(int orientation) {
@@ -672,7 +673,7 @@ class BitmapHunter implements Runnable {
     return rotation;
   }
 
- static int getExifTranslation(int orientation)  {
+  static int getExifTranslation(int orientation) {
     int translation;
     switch (orientation) {
       case ORIENTATION_FLIP_HORIZONTAL:
